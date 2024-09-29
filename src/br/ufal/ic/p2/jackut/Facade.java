@@ -52,6 +52,9 @@ public class Facade {
     public String getAtributoEmpresa(int empresa, String atributo) throws EmpresaNaoCadastradaException, AtributoInvalidoException {
         return sistema.getAtributoEmpresa(empresa, atributo);
     }
+    public int criarProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto) throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException {
+        return sistema.criarProduto(idEmpresa, nomeProduto, valorProduto, categoriaProduto);
+    }
 
 
 }

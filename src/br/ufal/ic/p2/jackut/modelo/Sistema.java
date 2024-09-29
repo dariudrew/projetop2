@@ -2,6 +2,7 @@ package br.ufal.ic.p2.jackut.modelo;
 
 import br.ufal.ic.p2.jackut.modelo.empresa.Empresa;
 import br.ufal.ic.p2.jackut.modelo.empresa.Restaurante;
+import br.ufal.ic.p2.jackut.modelo.empresa.produto.Produto;
 import br.ufal.ic.p2.jackut.modelo.exception.*;
 import br.ufal.ic.p2.jackut.modelo.usuario.Cliente;
 import br.ufal.ic.p2.jackut.modelo.usuario.DonoRestaurante;
@@ -12,22 +13,41 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class Sistema {
-// criar uma classe abstrata para sistema e esistemaEmpresa herdar metódos em comum ou fazer herença de sistema???
+
     int contadorID = 1;
     int contadorIdEmpresa = 1;
+    int contadorIdProduto = 1;
     Map<Integer, Empresa> empresasPorID = new HashMap<>();
     Map<Integer, Usuario> usuariosPorID = new HashMap<>();
+    Map<Integer, Produto> produtosPorID = new HashMap<>();
     XML xml = new XML();
 
 
 
     public void zerarSistema(){
-       for(int i = 0; i <= usuariosPorID.size(); i++) {
+       /*for(int i = 0; i <= usuariosPorID.size(); i++) {
             usuariosPorID.remove(i);
-        }/**/
+        }
+        for(int i = 0; i <= empresasPorID.size(); i++) {
+            empresasPorID.remove(i);
+        }*/
+        while(contadorID > 0 || contadorIdEmpresa > 0){
+            contadorID--;
+            contadorIdEmpresa--;
+            if(contadorID > 0){
+                usuariosPorID.remove(contadorID);
+
+            }
+            if(contadorIdEmpresa > 0){
+                empresasPorID.remove(contadorIdEmpresa);
+            }
+        }
+
         contadorID =1;
+        contadorIdEmpresa = 1;
     }
 
     public void criarUsuario(String nome, String email, String senha, String endereco)
@@ -93,18 +113,11 @@ public class Sistema {
 
 
     public boolean validaEmail(String email) {
-        if(email == null || email.isEmpty() || !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")){
-            return true;
-        }
-        return false;
+        return email == null || email.isEmpty() || !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
     }
 
     public boolean validaNome(String nome){
-        if(nome == null ||nome.isEmpty())
-        {
-            return true;
-        }
-        return false;
+        return nome == null || nome.isEmpty() ||nome.isBlank();
     }
    /* public int verificaEmail(String email){
         if(!usuariosPorID.isEmpty())
@@ -144,17 +157,11 @@ public class Sistema {
     }
 
     public boolean validaSenha(String senha) {
-        if(senha == null || senha.trim().isEmpty()){
-            return true;
-        }
-        return false;
+        return senha == null || senha.trim().isEmpty();
     }
 
     public boolean validaEndereco(String endereco){
-        if(endereco == null || endereco.trim().isEmpty()){
-            return true;
-        }
-        return false;
+        return endereco == null || endereco.trim().isEmpty();
     }
 
 
@@ -224,7 +231,7 @@ public class Sistema {
             EmpresaNomeEnderecoEmUsoException, TipoEmpresaInvalidoException {
 
         validaDadosEmpresa(dono, nomeEmpresa, endereco, tipoCozinha);
-
+        int idUltimaEmpresa = contadorIdEmpresa;
         switch (tipoEmpresa){
             case "restaurante":
                 Restaurante restaurante = new Restaurante(contadorIdEmpresa, dono, nomeEmpresa, endereco, tipoCozinha);
@@ -234,7 +241,12 @@ public class Sistema {
 
 
         }
-        return empresasPorID.get(contadorIdEmpresa-1).getIdEmpresa();// id da empresa
+        if(idUltimaEmpresa == contadorIdEmpresa) { // verifica se uma nova empresa foi criada, se o contador nao aumentar, nenhum tipo de empresa foi encontrado no switch
+            throw new TipoEmpresaInvalidoException();
+        }else{
+            return empresasPorID.get(contadorIdEmpresa-1).getIdEmpresa();// id da empresa
+        }
+
     }
 
     public String getEmpresasDoUsuario(int idDono) throws UsuarioNaoCriaEmpresaException {
@@ -282,7 +294,7 @@ public class Sistema {
         ArrayList<String> empresasProcuradaEndereco = new ArrayList<>();
 
 
-        String empresasPorDonoSemColchetes = getEmpresasDoUsuario(idDono).replaceAll("[\\[\\]\\{\\}]", "");
+        String empresasPorDonoSemColchetes = getEmpresasDoUsuario(idDono).replaceAll("[\\[\\]{}]", "");
         String[] empresasPorDono = empresasPorDonoSemColchetes.split(", ");
 
         for (int i = 0; i < empresasPorDono.length; i+=2) {
@@ -291,7 +303,7 @@ public class Sistema {
                 empresasProcuradaEndereco.add(empresasPorDono[i+1]);
             }
         }
-        if(empresasProcurada.size() == 0){
+        if(empresasProcurada.isEmpty()){
             throw new NaoExisteEmpresaException();
         }
         if(indice < 0){
@@ -324,19 +336,16 @@ public class Sistema {
             }
 
             Empresa empresa = empresasPorID.get(idEmpresa);
-            switch(atributo){
-                case "nome":
-                    return empresa.getNomeEmpresa();
-                case "endereco":
-                    return empresa.getEnderecoEmpresa();
-                case "tipoCozinha":
-                    return empresa.getTipoCozinha();
-                case "dono":
+            return switch (atributo) {
+                case "nome" -> empresa.getNomeEmpresa();
+                case "endereco" -> empresa.getEnderecoEmpresa();
+                case "tipoCozinha" -> empresa.getTipoCozinha();
+                case "dono" -> {
                     Usuario usuario = usuariosPorID.get(empresa.getIdDono());
-                    return usuario.getNome();
-                default:
-                   throw new AtributoInvalidoException();
-            }
+                    yield usuario.getNome();
+                }
+                default -> throw new AtributoInvalidoException();
+            };
         }
         else{
             throw new EmpresaNaoCadastradaException();
@@ -382,9 +391,45 @@ public class Sistema {
         }
 
 
+
     }
 
+    public int criarProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto)
+            throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException {
 
+        validaDadosProduto(idEmpresa, nomeProduto, valorProduto, categoriaProduto);
+        Produto produto = new Produto(idEmpresa, nomeProduto, valorProduto, categoriaProduto);
+        //produtosPorID.put(contadorIdProduto, produto);
+        contadorIdProduto++;
+        return produto.getIdProduto();
+    }
 
+    public void editarProduto(int idProduto, String nomeProduto, float valorProduto, String categoriaProduto){
+
+    }
+    public String getProduto(String  nomeProduto, int IdEmpresa, String atributo){
+        return ""; //retorna a informação do atributo
+    }
+    public String listarProdutos(int empresa){
+        return ""; //retonar a lista de produtos
+    }
+    public void validaDadosProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto) throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException {
+        if(!empresasPorID.containsKey(idEmpresa)){
+            throw new EmpresaNaoCadastradaException();
+        }
+        if(validaNome(nomeProduto)){
+            throw new NomeInvalidoException();
+        }
+        if(valorProduto <= 0){
+            throw new ProdutoValorInvalidoExcepion();
+        }
+        if(validaNome(categoriaProduto)){
+            throw new ProdutoCategoriaInvalidaException();
+        }
+        //Map<Produto, Integer> invertendoChaveValor =
+                produtosPorID.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+       //if(invertendoChaveValor.containsKey(nomeProduto))
+        //conciuir listar Produtos
+    }
 
 }
