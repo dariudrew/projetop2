@@ -1,13 +1,12 @@
 package br.ufal.ic.p2.jackut;
 
 import br.ufal.ic.p2.jackut.modelo.Sistema;
-import br.ufal.ic.p2.jackut.modelo.empresa.SistemaEmpresa;
 import br.ufal.ic.p2.jackut.modelo.exception.*;
 
 
 public class Facade {
     Sistema sistema = new Sistema();
-    SistemaEmpresa sistemaEmpresa = new SistemaEmpresa();
+    //SistemaEmpresa sistemaEmpresa = new SistemaEmpresa();
 
     public void zerarSistema()
     {
@@ -36,19 +35,22 @@ public class Facade {
     public int login(String email, String senha) throws LoginSenhaException {
         return sistema.login(email, senha);
     }
-    public int criarEmpresa(String tipoEmpresa, int dono, String nome, String endereco, String tipoCozinha){
-        return sistemaEmpresa.criarEmpresa(tipoEmpresa, dono, nome, endereco, tipoCozinha);
+    public int criarEmpresa(String tipoEmpresa, int dono, String nome, String endereco, String tipoCozinha)
+            throws EmpresaEnderecoInvalidoException, UsuarioNaoCriaEmpresaException, EmpresaNomeEnderecoEmUsoException,
+            EmpresaNomeInvalidoException, EmpresaTipoCozinhaInvalidoException, UsuarioNaoCadastradoException, EmpresaNomeExisteException, TipoEmpresaInvalidoException {
+        //return sistemaEmpresa.criarEmpresa(tipoEmpresa, dono, nome, endereco, tipoCozinha);
+        return sistema.criarEmpresa(tipoEmpresa, dono, nome, endereco, tipoCozinha);
     }
-    public String getEmpresasDoUsuario(int idDono){
-       return sistemaEmpresa.getEmpresasDoUsuario(idDono);
+    public String getEmpresasDoUsuario(int idDono) throws UsuarioNaoCriaEmpresaException {
+       return sistema.getEmpresasDoUsuario(idDono);
     }
 
-    public int getIdEmpresa(int idDono, String nome, int indice){
-        return sistemaEmpresa.getIdEmpresa(idDono, nome, indice);
+    public int getIdEmpresa(int idDono, String nome, int indice) throws UsuarioNaoCadastradoException, NomeInvalidoException, UsuarioNaoCriaEmpresaException, IndiceInvalidoException, NaoExisteEmpresaException, IndiceMaiorException {
+        return sistema.getIdEmpresa(idDono, nome, indice);
     }
 
-    public String getAtributoEmpresa(int empresa, String atributo){
-        return sistemaEmpresa.getAtributoEmpresa(empresa, atributo);
+    public String getAtributoEmpresa(int empresa, String atributo) throws EmpresaNaoCadastradaException, AtributoInvalidoException {
+        return sistema.getAtributoEmpresa(empresa, atributo);
     }
 
 
