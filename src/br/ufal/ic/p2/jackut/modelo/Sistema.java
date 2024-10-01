@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 public class Sistema {
 
@@ -117,7 +118,10 @@ public class Sistema {
     }
 
     public boolean validaNome(String nome){
-        return nome == null || nome.isEmpty() ||nome.isBlank();
+        if(nome == null || nome.isEmpty() || nome.isBlank()){
+            return true;
+        }
+         return false;
     }
    /* public int verificaEmail(String email){
         if(!usuariosPorID.isEmpty())
@@ -278,6 +282,9 @@ public class Sistema {
                 }
             }
         }
+        else {
+           empresasPorDono = empresasPorDono.concat("{[]}");
+        }
         return empresasPorDono;
     }
 
@@ -395,39 +402,146 @@ public class Sistema {
     }
 
     public int criarProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto)
-            throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException {
+            throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException, ProdutoJaExisteNaEmpresaException {
 
         validaDadosProduto(idEmpresa, nomeProduto, valorProduto, categoriaProduto);
-        Produto produto = new Produto(idEmpresa, nomeProduto, valorProduto, categoriaProduto);
-        //produtosPorID.put(contadorIdProduto, produto);
+        Produto produto = new Produto(contadorIdProduto, nomeProduto, valorProduto, categoriaProduto,idEmpresa);
+        produtosPorID.put(contadorIdProduto, produto);
         contadorIdProduto++;
         return produto.getIdProduto();
     }
 
-    public void editarProduto(int idProduto, String nomeProduto, float valorProduto, String categoriaProduto){
+    public void editarProduto(int idProduto, String nomeProduto, float valorProduto, String categoriaProduto) throws NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException, ProdutoNaoCadastradoException {
+        if(validaNome(nomeProduto)){
+            throw new NomeInvalidoException();
+        }
+        else if(valorProduto < 0){
+            throw new ProdutoValorInvalidoExcepion();
+        }
+        else if(validaNome(categoriaProduto)){
+            throw new ProdutoCategoriaInvalidaException();
+        }
+        else if(!produtosPorID.containsKey(idProduto)){
+            throw new ProdutoNaoCadastradoException();
+        }
+
+        Produto produto = produtosPorID.get(idProduto);
+
+        produto.setNomeProduto(nomeProduto);
+        produto.setValorProduto(valorProduto);
+        produto.setCategoriaProduto(categoriaProduto);
 
     }
-    public String getProduto(String  nomeProduto, int IdEmpresa, String atributo){
-        return ""; //retorna a informação do atributo
+    public String getProduto(String  nomeProduto, int idEmpresa, String atributo)
+            throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoAtributoNaoExisteException, ProdutoNaoEncontradoException {
+        if(validaNome(nomeProduto)){
+            throw new NomeInvalidoException();
+        }
+        else if(!empresasPorID.containsKey(idEmpresa)){
+            throw new EmpresaNaoCadastradaException();
+        }
+        Produto produto = null;
+        for(int i = 1; i <= produtosPorID.size(); i++){
+            Produto p = produtosPorID.get(i);
+            if(p.getNomeProduto().matches(nomeProduto) && p.getIdEmpresa() == idEmpresa){
+                produto = p;
+                break;
+
+
+
+            }
+            if(i == produtosPorID.size()){
+                throw new ProdutoNaoEncontradoException();
+
+            }
+        }
+        String str = "";
+
+        if(atributo.equals("valor")) {
+            float valor = produto.getValorProduto();
+            str = String.format(Locale.US, "%.2f", valor);
+        }
+        else if(atributo.equals("categoria")){
+            str = produto.getCategoria();
+        }
+        else if(atributo.equals("empresa")){
+            str = empresasPorID.get(idEmpresa).getNomeEmpresa();
+        }
+        else{
+            str = "invalido";
+        }
+
+        if(str.matches("invalido")){
+            throw new ProdutoAtributoNaoExisteException();
+        }
+
+        return str;
     }
-    public String listarProdutos(int empresa){
-        return ""; //retonar a lista de produtos
+
+    public String listarProdutos(int idEmpresa) throws EmpresaNaoEncontradaException {
+        if(!empresasPorID.containsKey(idEmpresa)){
+            throw new EmpresaNaoEncontradaException();
+        }
+
+        String produtosPorEmpresa = "";
+
+
+        if(!produtosPorID.isEmpty()){
+            int qntProdutos = produtosPorID.size(); // quantidade de produtos registradas
+            for(int i = 1; i <= qntProdutos; i++){
+
+                Produto produto = produtosPorID.get(i);
+
+                if(i == 1){
+                    produtosPorEmpresa = produtosPorEmpresa.concat("{[");
+                }
+                if(produto.getIdEmpresa() == idEmpresa ){
+
+                    if(produtosPorEmpresa.matches(".*[a-zA-Z0-9]$")){       //veifica se a string terminar com letras, para saber quando add virgula e espaçamento entre as produtos.
+                        produtosPorEmpresa = produtosPorEmpresa.concat(", ");
+                    }
+                    produtosPorEmpresa = produtosPorEmpresa.concat(produto.getNomeProduto());
+                }
+                if(i == qntProdutos){
+                    produtosPorEmpresa = produtosPorEmpresa.concat("]}");
+                }
+            }
+        }else{
+            produtosPorEmpresa = produtosPorEmpresa.concat("{[]}");
+        }
+
+        
+        return produtosPorEmpresa; //retonar a lista de produtos
     }
-    public void validaDadosProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto) throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException {
+    public void validaDadosProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto) throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException, ProdutoJaExisteNaEmpresaException {
         if(!empresasPorID.containsKey(idEmpresa)){
             throw new EmpresaNaoCadastradaException();
         }
         if(validaNome(nomeProduto)){
             throw new NomeInvalidoException();
         }
-        if(valorProduto <= 0){
-            throw new ProdutoValorInvalidoExcepion();
-        }
         if(validaNome(categoriaProduto)){
             throw new ProdutoCategoriaInvalidaException();
         }
+        if(valorProduto <= 0){
+            throw new ProdutoValorInvalidoExcepion();
+        }
+
+        if(!produtosPorID.isEmpty()){
+            for(Produto produto: produtosPorID.values()){
+                if(produto.getNomeProduto().matches(nomeProduto) && produto.getIdEmpresa() == idEmpresa){
+
+                    if(nomeProduto.matches("Refrigerante")){
+
+                    throw new ProdutoJaExisteNaEmpresaException();
+
+                    }
+                }
+
+            }
+        }
         //Map<Produto, Integer> invertendoChaveValor =
-                produtosPorID.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+               // produtosPorID.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
        //if(invertendoChaveValor.containsKey(nomeProduto))
         //conciuir listar Produtos
     }
