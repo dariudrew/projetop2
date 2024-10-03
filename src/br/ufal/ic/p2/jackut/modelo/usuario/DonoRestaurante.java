@@ -9,7 +9,7 @@ public class DonoRestaurante extends Usuario {
     }
     public String getCpf(){ return cpf;}
     public String getTipoObjeto(){
-        return "DonoRestaurante";
+        return "donoRestaurante";
     }
 
 }

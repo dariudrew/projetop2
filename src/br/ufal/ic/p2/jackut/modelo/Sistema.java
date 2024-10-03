@@ -4,6 +4,7 @@ import br.ufal.ic.p2.jackut.modelo.empresa.Empresa;
 import br.ufal.ic.p2.jackut.modelo.empresa.Restaurante;
 import br.ufal.ic.p2.jackut.modelo.empresa.produto.Produto;
 import br.ufal.ic.p2.jackut.modelo.exception.*;
+import br.ufal.ic.p2.jackut.modelo.pedido.Pedido;
 import br.ufal.ic.p2.jackut.modelo.usuario.Cliente;
 import br.ufal.ic.p2.jackut.modelo.usuario.DonoRestaurante;
 import br.ufal.ic.p2.jackut.modelo.usuario.Usuario;
@@ -21,23 +22,22 @@ public class Sistema {
     int contadorID = 1;
     int contadorIdEmpresa = 1;
     int contadorIdProduto = 1;
+    int contadorIdPedido = 1;
     Map<Integer, Empresa> empresasPorID = new HashMap<>();
     Map<Integer, Usuario> usuariosPorID = new HashMap<>();
     Map<Integer, Produto> produtosPorID = new HashMap<>();
+    Map<Integer, Pedido> pedidosPorID = new HashMap<>();
     XML xml = new XML();
 
 
 
     public void zerarSistema(){
-       /*for(int i = 0; i <= usuariosPorID.size(); i++) {
-            usuariosPorID.remove(i);
-        }
-        for(int i = 0; i <= empresasPorID.size(); i++) {
-            empresasPorID.remove(i);
-        }*/
+
         while(contadorID > 0 || contadorIdEmpresa > 0){
             contadorID--;
             contadorIdEmpresa--;
+            contadorIdProduto--;
+
             if(contadorID > 0){
                 usuariosPorID.remove(contadorID);
 
@@ -45,10 +45,15 @@ public class Sistema {
             if(contadorIdEmpresa > 0){
                 empresasPorID.remove(contadorIdEmpresa);
             }
+            if(contadorIdProduto > 0){
+                produtosPorID.remove(contadorIdProduto);
+            }
+
         }
 
-        contadorID =1;
+        contadorID = 1;
         contadorIdEmpresa = 1;
+        contadorIdProduto = 1;
     }
 
     public void criarUsuario(String nome, String email, String senha, String endereco)
@@ -123,20 +128,6 @@ public class Sistema {
         }
          return false;
     }
-   /* public int verificaEmail(String email){
-        if(!usuariosPorID.isEmpty())
-        {
-            for (Usuario usuario : usuariosPorID.values()) {
-
-                if (usuario.getEmail().equals(email)) {
-                    return usuario.getId();
-                }
-            }
-        }
-        return -1;
-
-
-    }*/
 
     public int verificaUsuario(String tipoMetodo, String atributo){
         try {
@@ -240,7 +231,6 @@ public class Sistema {
             case "restaurante":
                 Restaurante restaurante = new Restaurante(contadorIdEmpresa, dono, nomeEmpresa, endereco, tipoCozinha);
                 empresasPorID.put(contadorIdEmpresa, restaurante);
-                //System.out.println("EMPRESA TESTE: "+restaurante.getNomeEmpresa());
                 contadorIdEmpresa++;
 
 
@@ -254,7 +244,7 @@ public class Sistema {
     }
 
     public String getEmpresasDoUsuario(int idDono) throws UsuarioNaoCriaEmpresaException {
-        if(usuariosPorID.get(idDono).getTipoObjeto().matches("Cliente"))
+        if(usuariosPorID.get(idDono).getTipoObjeto().matches("cliente"))
         {
             throw new UsuarioNaoCriaEmpresaException();
         }
@@ -366,7 +356,7 @@ public class Sistema {
        if(!(usuariosPorID.containsKey(dono))){
             throw new UsuarioNaoCadastradoException();
         }
-        if(usuariosPorID.get(dono).getTipoObjeto().matches("Cliente")){
+        if(usuariosPorID.get(dono).getTipoObjeto().matches("cliente")){
             throw new UsuarioNaoCriaEmpresaException();
         }
         //nome da empresa vazio?
@@ -540,10 +530,180 @@ public class Sistema {
 
             }
         }
-        //Map<Produto, Integer> invertendoChaveValor =
-               // produtosPorID.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-       //if(invertendoChaveValor.containsKey(nomeProduto))
-        //conciuir listar Produtos
+
     }
+
+    // PEDIO    PEDIDO   PEDIDO  PEDIDO      PEDIDO
+
+    public int criarPedido(int idCliente, int idEmpresa) throws EmpresaNaoCadastradaException, DonoNaoFazPedidoException, UsuarioNaoCadastradoException, AtributoInvalidoException, NaoPermitidoPedidosAbertoMesmaEmpresaException {
+
+        validaDadosPedido(idCliente, idEmpresa);
+        String nomeCliente = getAtributoUsuario(idCliente, "nome");
+        String nomeEmpresa = getAtributoEmpresa(idEmpresa, "nome");
+        Pedido pedido = new Pedido(contadorIdPedido, nomeCliente, nomeEmpresa, "aberto", idCliente, idEmpresa);
+        pedidosPorID.put(contadorIdPedido, pedido);
+        contadorIdPedido++;
+        return pedido.getNumeroPedido(); //numero do pedido
+    }
+
+    public void validaDadosPedido(int idCliente, int idEmpresa) throws UsuarioNaoCadastradoException, EmpresaNaoCadastradaException, DonoNaoFazPedidoException, NaoPermitidoPedidosAbertoMesmaEmpresaException {
+        if(!usuariosPorID.containsKey(idCliente)){
+            throw new UsuarioNaoCadastradoException();
+        }
+        if(!empresasPorID.containsKey(idEmpresa)){
+            throw new EmpresaNaoCadastradaException();
+        }
+        if(usuariosPorID.get(idCliente).getTipoObjeto().matches("donoRestaurante")){
+            throw new DonoNaoFazPedidoException();
+        }
+        for(Pedido pedido: pedidosPorID.values()){
+            if(pedido.getIdCliente() == idCliente && pedido.getIdEmpresa() == idEmpresa){
+                throw new NaoPermitidoPedidosAbertoMesmaEmpresaException();
+            }
+        }
+    }
+
+    public int getNumeroPedido(int idCliente, int idEmpresa, int indice) throws PedidoNaoEncontradoException {
+
+
+        int qntPedidos = pedidosPorID.size();
+        int numeroPedido = 0;
+        int indiceProcurado = -1;                                 //iniciando a contagem padrao em 1 ao ives de 0 para reutilizar a variavel "indice" como contador e saber qual o pedido correto
+
+        for(int i=1; i<= qntPedidos; i++){
+            Pedido pedido = pedidosPorID.get(i);
+            if(pedido.getIdCliente() == idCliente && pedido.getIdEmpresa() == idEmpresa){
+                 indiceProcurado++;
+
+                if(indiceProcurado == indice){
+                    numeroPedido = pedido.getNumeroPedido();
+                    break;
+                }
+            }
+
+        }
+        if(indiceProcurado < indice || indiceProcurado > indice)
+        {
+            throw new PedidoNaoEncontradoException();
+        }
+
+        return numeroPedido; //numero do pedido
+    }
+
+    public void adicionarProduto(int numeroPedido, int idProduto) throws NaoExistePedidoAbertoException, ProdutoNaoEncontradoException, ProdutoNaoPerteceEmpresaException, PedidoFechadoException {
+        if(!pedidosPorID.containsKey(numeroPedido)){
+            throw new NaoExistePedidoAbertoException();
+        }
+        else if(!produtosPorID.containsKey(idProduto)){
+            throw new ProdutoNaoEncontradoException();
+        }
+
+
+
+        Pedido pedido = pedidosPorID.get(numeroPedido);
+        Produto produto = produtosPorID.get(idProduto);
+        if(pedido.getEstadoPedido().matches("fechado")){
+            System.out.println("PEDIDO FECHADO: "+pedido.getNumeroPedido());
+            throw new PedidoFechadoException();
+        }
+        if(produto.getIdEmpresa() == pedido.getIdEmpresa()){
+            String str = pedido.getProdutos();
+            str = str.replaceAll("]}", "");
+
+            if(str.matches(".*[a-zA-Z0-9]$")){ // se há produtos
+                str = str.concat(", "+produto.getNomeProduto()+"]}");
+            }
+            else{
+                str = str.concat(produto.getNomeProduto()+"]}");
+            }
+
+
+            pedido.setProdutos(str);
+            pedido.setValorPedido(produto.getValorProduto());
+        }
+        else{
+            throw new ProdutoNaoPerteceEmpresaException();
+        }
+
+    }
+
+    public String getPedidos(int numeroPedido, String atributo) throws PedidoNaoEncontradoException, AtributoInvalidoException, ProdutoAtributoNaoExisteException {
+        if(!pedidosPorID.containsKey(numeroPedido)){
+            throw new PedidoNaoEncontradoException();
+        }
+        else if(validaNome(atributo)){
+            throw new AtributoInvalidoException();
+        }
+        Pedido pedido = pedidosPorID.get(numeroPedido);
+        String str = "";
+        switch (atributo){
+            case "cliente":
+               return  str = pedido.getNomeCliente();
+            case "empresa":
+                return str = pedido.getNomeEmpresa();
+            case "estado":
+                return str = pedido.getEstadoPedido();
+            case "produtos":
+                return str = pedido.getProdutos();
+            case "valor":
+                return str = String.format(Locale.US, "%.2f", pedido.getValorPedido());
+        }
+        if(str.isEmpty()){
+            throw new ProdutoAtributoNaoExisteException();
+        }
+
+        return str;
+    }
+
+    public void fecharPedido(int numeroPedido) throws PedidoNaoEncontradoException {
+        if(!pedidosPorID.containsKey(numeroPedido)){
+            throw new PedidoNaoEncontradoException();
+        }
+        Pedido pedido = pedidosPorID.get(numeroPedido);
+        pedido.setEstadoPedido("preparando");
+    }
+
+    public void removerProduto(int numeroPedido, String produto) throws ProdutoInvalidoException, PedidoNaoEncontradoException, ProdutoNaoEncontradoException, NaoPossivelRemoverProdutoException, EmpresaNaoCadastradaException, ProdutoAtributoNaoExisteException, NomeInvalidoException {
+        if(!pedidosPorID.containsKey(numeroPedido)){
+            throw new PedidoNaoEncontradoException();
+        }
+        else if(validaNome(produto)){
+            throw new ProdutoInvalidoException();
+        }
+
+
+
+        Pedido pedido = pedidosPorID.get(numeroPedido);
+        String produtosDoPedido = pedido.getProdutos();
+
+        if(pedido.getEstadoPedido().contains("fechado")){
+            throw new NaoPossivelRemoverProdutoException();
+        }
+        else if(!pedido.getProdutos().contains(produto)){
+            throw new ProdutoNaoEncontradoException();
+        }
+
+        if(produtosDoPedido.contains(", "+produto+",")){
+            produtosDoPedido = produtosDoPedido.replaceFirst(", "+produto, "");
+        }
+        else if(produtosDoPedido.contains("["+produto+",")){
+            produtosDoPedido = produtosDoPedido.replaceFirst(produto+", ", "");
+        }
+        else if(produtosDoPedido.contains("["+produto)){
+            produtosDoPedido = produtosDoPedido.replaceFirst(produto, "");
+        }
+        else if(produtosDoPedido.contains(", "+produto+"]")){
+            produtosDoPedido = produtosDoPedido.replaceFirst(", "+produto, "");
+        }
+
+        //atualizando os produtos do pedido
+        pedido.setProdutos(produtosDoPedido);
+        String valorProduto = getProduto(produto, pedido.getIdEmpresa(),"valor");
+        float valorP = Float.valueOf(valorProduto);
+        pedido.setValorPedido(-valorP);
+            
+
+    }
+
 
 }
