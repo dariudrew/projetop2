@@ -556,9 +556,14 @@ public class Sistema {
         if(usuariosPorID.get(idCliente).getTipoObjeto().matches("donoRestaurante")){
             throw new DonoNaoFazPedidoException();
         }
-        for(Pedido pedido: pedidosPorID.values()){
+
+        for(Pedido pedido: pedidosPorID.values()){//
+
             if(pedido.getIdCliente() == idCliente && pedido.getIdEmpresa() == idEmpresa){
-                throw new NaoPermitidoPedidosAbertoMesmaEmpresaException();
+                if(pedido.getEstadoPedido().equals("aberto") || pedido.getEstadoPedido().equals("preparando")){
+                    throw new NaoPermitidoPedidosAbertoMesmaEmpresaException();
+                }
+
             }
         }
     }
@@ -603,7 +608,6 @@ public class Sistema {
         Pedido pedido = pedidosPorID.get(numeroPedido);
         Produto produto = produtosPorID.get(idProduto);
         if(pedido.getEstadoPedido().matches("fechado")){
-            System.out.println("PEDIDO FECHADO: "+pedido.getNumeroPedido());
             throw new PedidoFechadoException();
         }
         if(produto.getIdEmpresa() == pedido.getIdEmpresa()){
@@ -642,7 +646,9 @@ public class Sistema {
             case "empresa":
                 return str = pedido.getNomeEmpresa();
             case "estado":
-                return str = pedido.getEstadoPedido();
+                 str = pedido.getEstadoPedido();
+                    finalizarPedido(numeroPedido); //ta certo???
+                    return str;
             case "produtos":
                 return str = pedido.getProdutos();
             case "valor":
@@ -703,6 +709,16 @@ public class Sistema {
         pedido.setValorPedido(-valorP);
             
 
+    }
+    public void finalizarPedido(int numeroPedido) throws PedidoNaoEncontradoException {
+        if(!pedidosPorID.containsKey(numeroPedido)){
+            throw new PedidoNaoEncontradoException();
+        }
+        Pedido pedido = pedidosPorID.get(numeroPedido);
+
+        if(pedido.getEstadoPedido().equals("preparando")){
+            pedido.setEstadoPedido("fechado");
+        }
     }
 
 
