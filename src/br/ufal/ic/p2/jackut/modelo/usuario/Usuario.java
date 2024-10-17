@@ -41,4 +41,12 @@ public abstract class Usuario {
     public String getTipoObjeto() {
         return "Usuario";
     }
+
+    public String getVeiculo() {
+        return "";
+    }
+
+    public String getPlaca() {
+        return "";
+    }
 }

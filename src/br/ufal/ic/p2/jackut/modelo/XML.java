@@ -1,7 +1,6 @@
 package br.ufal.ic.p2.jackut.modelo;
 
-import br.ufal.ic.p2.jackut.modelo.usuario.Cliente;
-import br.ufal.ic.p2.jackut.modelo.usuario.DonoRestaurante;
+import br.ufal.ic.p2.jackut.modelo.usuario.DonoEmpresa;
 import br.ufal.ic.p2.jackut.modelo.usuario.Usuario;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -96,9 +95,9 @@ public class XML{
             usuarios.appendChild(endereco);
 
 
-            if(usuario instanceof DonoRestaurante){
+            if(usuario instanceof DonoEmpresa){
                 Element cpf = document.createElement("cpf");
-                cpf.appendChild(document.createTextNode(((DonoRestaurante) usuario).getCpf()));
+                cpf.appendChild(document.createTextNode(((DonoEmpresa) usuario).getCpf()));
                 usuarios.appendChild(endereco);
             }
 

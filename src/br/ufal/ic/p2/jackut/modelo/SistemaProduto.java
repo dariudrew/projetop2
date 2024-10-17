@@ -60,13 +60,9 @@ public class SistemaProduto {
             if(p.getNomeProduto().matches(nomeProduto) && p.getIdEmpresa() == idEmpresa){
                 produto = p;
                 break;
-
-
-
             }
             if(i == dados.produtosPorID.size()){
                 throw new ProdutoNaoEncontradoException();
-
             }
         }
         String str = "";
@@ -88,7 +84,6 @@ public class SistemaProduto {
         if(str.matches("invalido")){
             throw new ProdutoAtributoNaoExisteException();
         }
-
         return str;
     }
 
@@ -125,7 +120,7 @@ public class SistemaProduto {
         }
 
 
-        return produtosPorEmpresa; //retonar a lista de produtos
+        return produtosPorEmpresa;
     }
     public void validaDadosProduto(int idEmpresa, String nomeProduto, float valorProduto, String categoriaProduto)
             throws EmpresaNaoCadastradaException, NomeInvalidoException, ProdutoValorInvalidoExcepion, ProdutoCategoriaInvalidaException, ProdutoJaExisteNaEmpresaException {

@@ -40,14 +40,14 @@ public class SistemaPedido {
         if(!dados.empresasPorID.containsKey(idEmpresa)){
             throw new EmpresaNaoCadastradaException();
         }
-        if(dados.usuariosPorID.get(idCliente).getTipoObjeto().matches("donoRestaurante")){
+        if(!dados.usuariosPorID.get(idCliente).getTipoObjeto().matches("cliente")){
             throw new DonoNaoFazPedidoException();
         }
 
         for(Pedido pedido: dados.pedidosPorID.values()){//
 
-            if(pedido.getIdCliente() == idCliente && pedido.getIdEmpresa() == idEmpresa){
-                if(pedido.getEstadoPedido().equals("aberto") || pedido.getEstadoPedido().equals("preparando")){
+            if(pedido.getIdCliente() == idCliente && pedido.getIdEmpresa() == idEmpresa){//testart o if abaixo
+                if(pedido.getEstadoPedido().equals("aberto")){
                     throw new NaoPermitidoPedidosAbertoMesmaEmpresaException();
                 }
 
@@ -60,7 +60,7 @@ public class SistemaPedido {
 
         int qntPedidos = dados.pedidosPorID.size();
         int numeroPedido = 0;
-        int indiceProcurado = -1;                                 //iniciando a contagem padrao em 1 ao ives de 0 para reutilizar a variavel "indice" como contador e saber qual o pedido correto
+        int indiceProcurado = -1;  //iniciando a contagem padrao em 1 ao ives de 0 para reutilizar a variavel "indice" como contador e saber qual o pedido correto
 
         for(int i=1; i<= qntPedidos; i++){
             Pedido pedido = dados.pedidosPorID.get(i);
@@ -78,7 +78,7 @@ public class SistemaPedido {
             throw new PedidoNaoEncontradoException();
         }
 
-        return numeroPedido; //numero do pedido
+        return numeroPedido;
     }
 
     public void adicionarProduto(int numeroPedido, int idProduto)
@@ -91,11 +91,9 @@ public class SistemaPedido {
             throw new ProdutoNaoEncontradoException();
         }
 
-
-
         Pedido pedido = dados.pedidosPorID.get(numeroPedido);
         Produto produto = dados.produtosPorID.get(idProduto);
-        if(pedido.getEstadoPedido().matches("fechado")){
+        if(!(pedido.getEstadoPedido().matches("aberto"))){
             throw new PedidoFechadoException();
         }
         if(produto.getIdEmpresa() == pedido.getIdEmpresa()){
@@ -128,26 +126,20 @@ public class SistemaPedido {
             throw new AtributoInvalidoException();
         }
         Pedido pedido = dados.pedidosPorID.get(numeroPedido);
-        String str = "";
         switch (atributo){
             case "cliente":
-                return  str = pedido.getNomeCliente();
+                return pedido.getNomeCliente();
             case "empresa":
-                return str = pedido.getNomeEmpresa();
+                return pedido.getNomeEmpresa();
             case "estado":
-                str = pedido.getEstadoPedido();
-                finalizarPedido(numeroPedido); //ta certo???
-                return str;
+                return  pedido.getEstadoPedido();
             case "produtos":
-                return str = pedido.getProdutos();
+                return pedido.getProdutos();
             case "valor":
-                return str = String.format(Locale.US, "%.2f", pedido.getValorPedido());
+                return String.format(Locale.US, "%.2f", pedido.getValorPedido());
+            default:
+                throw new ProdutoAtributoNaoExisteException();
         }
-        if(str == null){
-            throw new ProdutoAtributoNaoExisteException();
-        }
-
-        return str;
     }
 
     public void fecharPedido(int numeroPedido) throws PedidoNaoEncontradoException {
@@ -161,56 +153,38 @@ public class SistemaPedido {
     public void removerProduto(int numeroPedido, String produto)
             throws ProdutoInvalidoException, PedidoNaoEncontradoException, ProdutoNaoEncontradoException, NaoPossivelRemoverProdutoException, EmpresaNaoCadastradaException, ProdutoAtributoNaoExisteException, NomeInvalidoException {
 
-        if(!dados.pedidosPorID.containsKey(numeroPedido)){
+        if (!dados.pedidosPorID.containsKey(numeroPedido)) {
             throw new PedidoNaoEncontradoException();
-        }
-        else if(sistemaUsuario.validaNome(produto)){
+        } else if (sistemaUsuario.validaNome(produto)) {
             throw new ProdutoInvalidoException();
         }
-
 
 
         Pedido pedido = dados.pedidosPorID.get(numeroPedido);
         String produtosDoPedido = pedido.getProdutos();
 
-        if(pedido.getEstadoPedido().contains("fechado")){
+        if (!(pedido.getEstadoPedido().equals("aberto"))) {
             throw new NaoPossivelRemoverProdutoException();
-        }
-        else if(!pedido.getProdutos().contains(produto)){
+        } else if (!pedido.getProdutos().contains(produto)) {
             throw new ProdutoNaoEncontradoException();
         }
 
-        if(produtosDoPedido.contains(", "+produto+",")){
-            produtosDoPedido = produtosDoPedido.replaceFirst(", "+produto, "");
-        }
-        else if(produtosDoPedido.contains("["+produto+",")){
-            produtosDoPedido = produtosDoPedido.replaceFirst(produto+", ", "");
-        }
-        else if(produtosDoPedido.contains("["+produto)){
+        if (produtosDoPedido.contains(", " + produto + ",")) {
+            produtosDoPedido = produtosDoPedido.replaceFirst(", " + produto, "");
+        } else if (produtosDoPedido.contains("[" + produto + ",")) {
+            produtosDoPedido = produtosDoPedido.replaceFirst(produto + ", ", "");
+        } else if (produtosDoPedido.contains("[" + produto)) {
             produtosDoPedido = produtosDoPedido.replaceFirst(produto, "");
-        }
-        else if(produtosDoPedido.contains(", "+produto+"]")){
-            produtosDoPedido = produtosDoPedido.replaceFirst(", "+produto, "");
+        } else if (produtosDoPedido.contains(", " + produto + "]")) {
+            produtosDoPedido = produtosDoPedido.replaceFirst(", " + produto, "");
         }
 
         //atualizando os produtos do pedido
         pedido.setProdutos(produtosDoPedido);
-        String valorProduto = sistemaProduto.getProduto(produto, pedido.getIdEmpresa(),"valor");
+        String valorProduto = sistemaProduto.getProduto(produto, pedido.getIdEmpresa(), "valor");
         float valorP = Float.valueOf(valorProduto);
         pedido.setValorPedido(-valorP);
 
 
     }
-    public void finalizarPedido(int numeroPedido) throws PedidoNaoEncontradoException {
-        if(!dados.pedidosPorID.containsKey(numeroPedido)){
-            throw new PedidoNaoEncontradoException();
-        }
-        Pedido pedido = dados.pedidosPorID.get(numeroPedido);
-
-        if(pedido.getEstadoPedido().equals("preparando")){
-            pedido.setEstadoPedido("fechado");
-        }
-    }
-
-
 }
